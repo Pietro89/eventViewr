@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title></title>
+        <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+        <script src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+    </head>
+    <body>
+        <script>
+            window.fbAsyncInit = function () {
+
+                FB.init({
+                    appId: '766395460132898',
+                    xfbml: true,
+                    version: 'v2.5'
+                });
+            };
+            
+            function login() {
+                    FB.init({
+                        appId: '766395460132898',
+                        xfbml: true,
+                        version: 'v2.5'
+                    });
+                    FB.login(function (response) {
+                        if (response.status === 'connected') {
+                            console.log("COnnesso");
+                           //testAPI();
+                        } else if (response.status === 'not_authorized') {
+                            //document.getElementById('status').innerHTML = 'Please log ' +
+                            //        'into this app.';
+                        } else {
+                            //document.getElementById('status').innerHTML = 'Please log ' +
+                            //        'into Facebook.';
+                        }
+                    }, {scope: 'public_profile,email,user_likes,pages_show_list,user_events'}
+                    );
+
+                    FB.api('/me', function(response){
+                        while (!response){ console.log("FUCK");}
+                        console.log(response.id+" getCurr ");
+                        meId = response.id;
+                        console.log(meId+" OK ");
+                    });
+                }
+                
+            function analyzeEvents( getAttending, countAttending, printEvent, getUserEvents, g ){
+                obj = JSON.parse(JSON.stringify( g ));
+                for ( i = 0; i < obj.data.length ; i++ ){  
+                    var data = new Date();
+                    var data2 = new Date(obj.data[i].start_time);
+                          if( data < data2){
+                            
+                            getAttending( obj.data[i].id, countAttending );                   
+                          }
+                          else{
+                              return i;
+                          }
+                      }
+            }     
+            function getAttending( eventId, countAttending ){    
+                FB.api("/"+eventId+"/attending", function(response){
+                 countAttending( eventId, response, 0, printEvent );
+                });
+            }
+            
+            function countAttending( eventId, g, n, printEvent ){
+                obj = JSON.parse(JSON.stringify( g ));
+                
+                var xmlhttp = new XMLHttpRequest();  
+                xmlhttp.open("POST", "http://localhost:3000/genderize");
+                xmlhttp.setRequestHeader("Content-type","application/json");
+                xmlhttp.send(JSON.stringify( g ));
+                /*for (i = 0; i < obj.data.length ; i++){
+                    //name = obj.data[i].name;
+                    //first_name = name.substr(0,name.indexOf(' '));
+                    //console.log(first_name);
+                    n++;
+                }*/
+
+                n = n + obj.data.length;
+
+                if (obj.paging.next){
+                    FB.api(obj.paging.next, function(response){
+                        //console.log("************");
+                        countAttending( eventId, response, n, printEvent );  
+                    });
+                }
+                else{
+                    printEvent(eventId, n);
+                }
+            }
+            
+            function printEvent(id, n){
+                //console.log(id+"  -  "+n);
+            }
+            
+            
+                
+            
+            function getUserEvents( analyzeEvents ){ 
+                FB.api('/me/events?type=not_replied', function (response){
+                    analyzeEvents( getAttending, countAttending, printEvent, getUserEvents, response );
+                });
+            }
+            
+            
+            
+            
+            
+            (function (d, s, id) {
+                var js, fjs = d.getElementsByTagName(s)[0];
+                if (d.getElementById(id)) {
+                    return;
+                }
+                js = d.createElement(s);
+                js.id = id;
+                js.src = "//connect.facebook.net/en_US/sdk.js";
+                fjs.parentNode.insertBefore(js, fjs);
+            }(document, 'script', 'facebook-jssdk'));
+            
+            </script>
+            <button onclick='login()'> login </button>
+            <button onclick='getUserEvents( analyzeEvents )'> Eventi </button>
+    </body>
+</html>
+
